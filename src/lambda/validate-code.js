@@ -1,7 +1,14 @@
 import axios from 'axios'
 
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
+};
+
 export async function handler(event, context) {
   try {
+    const { code, id } = event.queryStringParameters
     const response = await axios.post('https://10kmore-com.myshopify.com/admin/api/2022-04/graphql.json', JSON.stringify({
       query: `
           query ProductQuery($id: ID!) {
@@ -16,7 +23,7 @@ export async function handler(event, context) {
           }
         `,
       variables: {
-        id: 'gid://shopify/Product/7284539490461'
+        id: `gid://shopify/Product/${id}`
       },
     }), {
       headers: {
@@ -28,7 +35,6 @@ export async function handler(event, context) {
     const { product } = response.data.data
     const responseCode = product.metafield.value
 
-    const code = event.queryStringParameters.code
     let codeResponse = { access: "denied" }
 
     if (responseCode.toLowerCase() === code.toLowerCase()) {
@@ -39,12 +45,14 @@ export async function handler(event, context) {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify(codeResponse)
     }
   } catch (err) {
     console.log(err) // output to netlify function log
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ access: "denied" }) // Could be a custom message or object i.e. JSON.stringify(err)
     }
   }
